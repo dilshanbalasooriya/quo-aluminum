@@ -8,8 +8,8 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlmodel import Session, select
 from pwdlib import PasswordHash
 
-from connection import DatabaseManager
-from models import RoleEnum, User
+from database.connection import DatabaseManager
+from database.models import RoleEnum, User
 
 # JWT Settings
 SECRET_KEY = os.getenv("SECRET_KEY", "your-super-secret-key-change-this-in-prod")
