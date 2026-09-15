@@ -21,6 +21,14 @@ class StatusEnum(str, Enum):
     ISSUED = "ISSUED"
 
 
+class Setting(SQLModel, table=True):
+    """Simple key/value store, e.g. key='default_worker_fee', value='1500'."""
+    __tablename__ = "settings"
+
+    key: str = Field(primary_key=True, max_length=100)
+    value: str = Field(max_length=255)
+
+
 class User(SQLModel, table=True):
     __tablename__ = "users"
     
@@ -55,8 +63,6 @@ class WindowDoorType(SQLModel, table=True):
     category: CategoryEnum
     vertical_bars_count: int = Field(default=2)
     horizontal_bars_count: int = Field(default=2)
-    hardware_cost: Decimal = Field(default=0, max_digits=10, decimal_places=2)
-    glass_rate_per_sqm: Decimal = Field(default=0, max_digits=10, decimal_places=2)
     is_active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
@@ -108,7 +114,6 @@ class QuotationItem(SQLModel, table=True):
     
     calculated_weight_kg: Decimal = Field(default=0, max_digits=10, decimal_places=3)
     item_frame_cost: Decimal = Field(default=0, max_digits=10, decimal_places=2)
-    item_hardware_cost: Decimal = Field(default=0, max_digits=10, decimal_places=2)
     item_total: Decimal = Field(default=0, max_digits=10, decimal_places=2)
 
     # Relationships
