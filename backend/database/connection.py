@@ -1,8 +1,10 @@
 import os
 from sqlmodel import SQLModel, Session, create_engine
 
+from configs.config import DB_URI 
+
 # Defaulting to SQLite for local development; override with your production DB URL
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./aluminium_quotation.db")
+DATABASE_URL = DB_URI
 
 # check_same_thread is needed only for SQLite
 connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
