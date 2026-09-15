@@ -10,9 +10,9 @@ from pwdlib import PasswordHash
 
 from database.connection import DatabaseManager
 from database.models import RoleEnum, User
-
+from configs.config import SECRET_KEY
 # JWT Settings
-SECRET_KEY = os.getenv("SECRET_KEY", "your-super-secret-key-change-this-in-prod")
+SECRET_KEY = SECRET_KEY
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 24  # 24 Hours
 

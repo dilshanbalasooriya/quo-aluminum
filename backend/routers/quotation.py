@@ -17,6 +17,13 @@ from database.models import (
     User,
     WindowDoorType,
 )
+from configs.config import(
+    COMPANY_ADDRESS,
+    COMPANY_LOGO_URL,
+    COMPANY_NAME,
+    COMPANY_PHONE,
+    COMPANY_WEBSITE,
+)
 from services.calulate_service import PriceBreakdown, calculate_item_price
 from services.security import get_current_user
 
@@ -153,6 +160,8 @@ def create_quotation(
     if not payload.items:
         raise HTTPException(400, "At least one item is required to create a quotation.")
 
+#TODO 
+# Fee need to get from the worker. worker can deside the working fee.
     # 1. Fetch worker fee from settings table
     fee_setting = session.get(Setting, "default_worker_fee")
     worker_fee = Decimal(fee_setting.value) if fee_setting else Decimal("0.00")
@@ -265,13 +274,12 @@ def generate_quotation_pdf(
 
     # 3. Read Company settings from Environment variables
     company_context = {
-        "company_name": os.getenv("COMPANY_NAME", "WebComs Gloabel"),
-        "company_address": os.getenv("COMPANY_ADDRESS", "123 Magammana, Karawanella"),
-        "company_phone": os.getenv("COMPANY_PHONE", "0123 456 7890"),
-        "company_website": os.getenv("COMPANY_WEBSITE", "www.webcomgloble.com"),
-        "company_logo": os.getenv("COMPANY_LOGO_URL", ""),
+        "company_name":COMPANY_NAME,
+        "company_address": COMPANY_ADDRESS,
+        "company_phone": COMPANY_PHONE,
+        "company_website": COMPANY_WEBSITE,
+        "company_logo":COMPANY_LOGO_URL 
     }
-
     # 4. Render HTML template
     template = jinja_env.get_template("quotation.html")
     rendered_html = template.render(
