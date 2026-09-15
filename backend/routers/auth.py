@@ -10,6 +10,7 @@ from services.security import (
     get_current_user,
     hash_password,
     verify_password,
+    require_admin
 )
 
 router = APIRouter(prefix="/auth", tags=["Authentication"])
@@ -31,6 +32,9 @@ class Token(BaseModel):
     access_token: str
     token_type: str = "bearer"
 
+class PasswordReset(BaseModel):
+    new_password: str
+ 
 
 # --- Endpoints ---
 
@@ -38,8 +42,10 @@ class Token(BaseModel):
 def register_worker(
     user_data: UserRegister,
     session: Session = Depends(DatabaseManager.get_session),
+    admin_user:User = Depends(require_admin)
 ):
     """Registers a new user with the WORKER role."""
+
     existing_user = session.exec(
         select(User).where(User.username == user_data.username)
     ).first()
@@ -60,6 +66,37 @@ def register_worker(
 
     return new_worker
 
+ 
+@router.get(
+    "/users",
+    response_model=list[UserResponse],
+    dependencies=[Depends(require_admin)],
+)
+def list_users(session: Session = Depends(DatabaseManager.get_session)):
+    """Admin-only: list all logins."""
+    return session.exec(select(User)).all()
+
+
+
+#Password recovery
+router.put(
+    "/users/{user_id}/password",
+    dependencies=[Depends(require_admin)],
+)
+def reset_password(
+    user_id: int,
+    payload: PasswordReset,
+    session: Session = Depends(DatabaseManager.get_session),
+):
+    """Admin-only: set a new password for any user (e.g. a worker who
+    forgot theirs). The admin does not need to know the old password."""
+    user = session.get(User, user_id)
+    if not user:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found.")
+    user.password_hash = hash_password(payload.new_password)
+    session.add(user)
+    session.commit()
+    return {"ok": True}
 
 @router.post("/login", response_model=Token)
 def login(
