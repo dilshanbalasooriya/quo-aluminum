@@ -1,7 +1,15 @@
+/* 
+authStore: globle authentication haddleing class.
+check the request user role. 
+set jwt token for outgoing responces.
+haddle loging and logout function in ui prespective
+ */
+
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import axios from 'axios'
 import { jwtDecode} from 'jwt-decode'
+import apiClient from '@/api/axios'
 
 // TypeScript Interfaces
 export type Role = 'ADMIN' | 'WORKER'
@@ -68,7 +76,11 @@ export const useAuthStore = defineStore('auth', () => {
     formData.append('username', username)
     formData.append('password', password)
 
-    const response = await axios.post<{ access_token: string }>('/auth/login', formData)
+    const response = await apiClient.post('auth/login',formData,{
+      headers:{
+        'Content-Type':'application/x-www-form-urlencoded'
+      }
+    })
     const accessToken = response.data.access_token
 
     setToken(accessToken)
@@ -76,7 +88,7 @@ export const useAuthStore = defineStore('auth', () => {
     // Return role so the calling component/router knows where to redirect
     return user.value!.role
   }
-
+      
   function logout() {
     token.value = null
     user.value = null
