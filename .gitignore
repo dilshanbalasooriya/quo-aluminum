@@ -9,3 +9,5 @@ __pycache__/
 #database file
 aluminium_quotation.db/
 aluminium_quotation.db-journal/
+aluminium_quotation.db
+backend/seed.py
