@@ -1,67 +1,67 @@
-import { createRouter, createWebHistory, type RouteRecordRaw } from 'vue-router'
+import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/authStore'
 
-const routes: Array<RouteRecordRaw> = [
-  {
-    path: '/',
-    redirect: '/login'
-  },
-  {
-    path: '/login',
-    name: 'login',
-    component: () => import('@/views/LoginView.vue'),
-    meta: { requiresAuth: false }
-  },
-  {
-    path: '/admin',
-    name: 'admin-dashboard',
-    component: () => import('@/views/admin/AdminView.vue'),
-    meta: { requiresAuth: true, role: 'ADMIN' }
-  },
-  {
-    path: '/worker',
-    name: 'worker-dashboard',
-    component: () => import('@/views/worker/WorkerView.vue'),
-    meta: { requiresAuth: true, role: 'WORKER' } // Accessible by both WORKER and ADMIN
-  },
-  {
-    path: '/:pathMatch(.*)*',
-    redirect: '/login'
-  }
-]
-
 const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes
+  history: createWebHistory(),
+  routes: [
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('@/views/LoginView.vue'),
+      meta: { requiresAuth: false }
+    },
+    // ================= ADMIN ROUTES =================
+    {
+      path: '/admin',
+      meta: { requiresAuth: true, role: 'ADMIN' },
+      children: [
+        {
+          path: '',
+          name: 'admin-dashboard',
+          component: () => import('@/views/admin/AdminDashboardView.vue')
+        },
+        {
+          path: 'profiles',
+          name: 'admin-profiles',
+          component: () => import('@/views/admin/AdminProfilesView.vue')
+        },
+        {
+          path: 'templates',
+          name: 'admin-templates',
+          component: () => import('@/views/admin/AdminTemplatesView.vue')
+        }
+      ]
+    },
+    // ================= WORKER ROUTES =================
+    {
+      path: '/workshop',
+      name: 'worker-dashboard',
+      component: () => import('@/views/worker/WorkerDashboardView.vue'),
+      meta: { requiresAuth: true, role: 'WORKER' }
+    },
+    // ================= DEFAULT REDIRECT =================
+    {
+      path: '/',
+      redirect: () => {
+        const authStore = useAuthStore()
+        return authStore.isAdmin ? { name: 'admin-dashboard' } : { name: 'worker-dashboard' }
+      }
+    }
+  ]
 })
 
-router.beforeEach((to, from, next) => {
+// Navigation Guards
+router.beforeEach((to, _from, next) => {
   const authStore = useAuthStore()
-  const requiresAuth = to.meta.requiresAuth
-  const requiredRole = to.meta.role
 
-  // 1. Unauthenticated users trying to access protected pages
-  if (requiresAuth && !authStore.isAuthenticated) {
+  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return next({ name: 'login' })
   }
-
-  // 2. Already logged in users trying to visit /login
-  if (to.name === 'login' && authStore.isAuthenticated) {
-    if (authStore.isAdmin) return next({ name: 'admin-dashboard' })
-    return next({ name: 'worker-dashboard' })
+  
+  if (to.meta.role && authStore.user?.role !== to.meta.role && authStore.user?.role !== 'ADMIN') {
+    return next({ name: 'login' })
   }
-
-  // 3. Admin user visiting Worker route -> ALLOWED
-  if (authStore.isAdmin && requiredRole === 'WORKER') {
-    return next()
-  }
-
-  // 4. Worker user trying to visit Admin route -> BLOCKED
-  if (requiredRole === 'ADMIN' && !authStore.isAdmin) {
-    return next({ name: 'worker-dashboard' })
-  }
-
-  // 5. Allow normal navigation
+  
   next()
 })
 
