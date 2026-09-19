@@ -41,6 +41,15 @@ export interface ProfileOut {
   rate_per_kg: string
   is_active: boolean
 }
+export interface ProfileUpdate {
+  id:number
+  profile_name?: string
+  brand?: string | null
+  gauge?: number | string
+  weight_per_meter?: number | string
+  rate_per_kg?: number | string
+  is_active?: boolean
+}
 
 // ==========================================
 // 3. Window & Door Types (Catalog & Admin)
