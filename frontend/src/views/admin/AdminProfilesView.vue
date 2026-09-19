@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue'
 import apiClient from '@/api/axios'
 import { useToastStore } from '@/stores/toastStore'
 import { useCatalogStore } from '@/stores/catalogStore'
-import type { ProfileOut, ProfileCreate } from '@/types'
+import type { ProfileOut, ProfileCreate,ProfileUpdate } from '@/types'
 
 const catalog = useCatalogStore()
 const toast = useToastStore()
@@ -77,7 +77,7 @@ async function handleSubmit() {
 }
 
 // Toggle between Active and Inactive
-async function handleToggleStatus(p: ProfileOut) {
+async function handleToggleStatus(p: ProfileUpdate) {
   try {
     const newStatus = !p.is_active
     await apiClient.patch(`/admin/aluminium-profiles/${p.id}`, { is_active: newStatus })
