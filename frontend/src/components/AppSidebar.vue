@@ -78,6 +78,17 @@ function isActive(routeName: string) {
           </svg>
           <span v-if="!isCollapsed" class="truncate text-sm">Window Templates</span>
         </RouterLink>
+        <!-- User / Worker Management -->
+        <RouterLink :to="{ name: 'admin-users' }"
+          class="flex items-center space-x-3 px-3 py-2.5 rounded-xl font-medium transition-colors"
+          :class="isActive('admin-users') ? 'bg-slate-950 dark:bg-slate-800 text-white' : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/50'"
+          :title="isCollapsed ? 'Worker Management' : ''">
+          <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+              d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+          </svg>
+          <span v-if="!isCollapsed" class="truncate text-sm">Worker Management</span>
+        </RouterLink>
       </div>
 
       <!-- ================= WORKER SECTION ================= -->
@@ -100,7 +111,7 @@ function isActive(routeName: string) {
         </RouterLink>
 
         <!-- Saved Quotations -->
-        <a href="#"
+        <RouterLink :to="{ name: 'worker-quotations' }"
           class="flex items-center space-x-3 px-3 py-2.5 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 font-medium transition-colors"
           :title="isCollapsed ? 'Saved Quotations' : ''">
           <svg class="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -108,7 +119,7 @@ function isActive(routeName: string) {
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
           </svg>
           <span v-if="!isCollapsed" class="truncate text-sm">Saved Quotations</span>
-        </a>
+        </RouterLink>
       </div>
 
     </div>

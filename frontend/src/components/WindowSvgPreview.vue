@@ -18,17 +18,29 @@ const props = withDefaults(
   }
 )
 
-const svgWidth = 400
+// Dynamically scale SVG coordinate canvas width based on real-world millimeter proportions
+const svgWidth = computed(() => {
+  const w = props.widthMm || 1200
+  const h = props.heightMm || 1500
+  // Keep base width around 400, but scale relative to height to match real dimensions
+  return Math.max(200, Math.min(800, (w / h) * 400))
+})
+
 const svgHeight = 400
+const padding = 24
+
+// Calculate inner frame dimensions
+const innerWidth = computed(() => svgWidth.value - padding * 2)
+const innerHeight = computed(() => svgHeight - padding * 2)
 
 // Calculate vertical bars coordinates inside the frame
 const verticalLines = computed<number[]>(() => {
   const lines: number[] = []
   const count = props.verticalBars || 0
   if (count <= 0) return lines
-  const step = svgWidth / (count + 1)
+  const step = innerWidth.value / (count + 1)
   for (let i = 1; i <= count; i++) {
-    lines.push(i * step)
+    lines.push(padding + i * step)
   }
   return lines
 })
@@ -38,9 +50,9 @@ const horizontalLines = computed<number[]>(() => {
   const lines: number[] = []
   const count = props.horizontalBars || 0
   if (count <= 0) return lines
-  const step = svgHeight / (count + 1)
+  const step = innerHeight.value / (count + 1)
   for (let i = 1; i <= count; i++) {
-    lines.push(i * step)
+    lines.push(padding + i * step)
   }
   return lines
 })
@@ -58,14 +70,14 @@ const horizontalLines = computed<number[]>(() => {
     </div>
 
     <!-- SVG Container Box -->
-    <div class="relative w-full max-w-[280px] aspect-square flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-2">
-      <svg :viewBox="`0 0 ${svgWidth} ${svgHeight}`" class="w-full h-full drop-shadow-sm">
+    <div class="relative w-full max-w-[320px] aspect-[4/3] flex items-center justify-center bg-slate-50 dark:bg-slate-900/50 rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-2 overflow-hidden">
+      <svg :viewBox="`0 0 ${svgWidth} ${svgHeight}`" class="w-full h-full max-h-[220px] drop-shadow-sm transition-all duration-200">
         <!-- Outer Frame Structure -->
         <rect
-          x="20"
-          y="20"
-          :width="svgWidth - 40"
-          :height="svgHeight - 40"
+          x="16"
+          y="16"
+          :width="svgWidth - 32"
+          :height="svgHeight - 32"
           rx="6"
           class="fill-white dark:fill-slate-800 stroke-slate-800 dark:stroke-sky-400"
           stroke-width="8"
@@ -73,10 +85,10 @@ const horizontalLines = computed<number[]>(() => {
 
         <!-- Glass Pane Tint Effect -->
         <rect
-          x="24"
-          y="24"
-          :width="svgWidth - 48"
-          :height="svgHeight - 48"
+          :x="padding"
+          :y="padding"
+          :width="innerWidth"
+          :height="innerHeight"
           rx="4"
           class="fill-sky-50/50 dark:fill-sky-950/20"
         />
@@ -86,9 +98,9 @@ const horizontalLines = computed<number[]>(() => {
           v-for="x in verticalLines"
           :key="'v-' + x"
           :x1="x"
-          y1="24"
+          :y1="padding"
           :x2="x"
-          :y2="svgHeight - 24"
+          :y2="svgHeight - padding"
           class="stroke-slate-400 dark:stroke-slate-600"
           stroke-width="4"
           stroke-linecap="round"
@@ -98,9 +110,9 @@ const horizontalLines = computed<number[]>(() => {
         <line
           v-for="y in horizontalLines"
           :key="'h-' + y"
-          x1="24"
+          :x1="padding"
           :y1="y"
-          :x2="svgWidth - 24"
+          :x2="svgWidth - padding"
           :y2="y"
           class="stroke-slate-400 dark:stroke-slate-600"
           stroke-width="4"
