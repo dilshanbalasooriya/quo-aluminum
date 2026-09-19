@@ -29,16 +29,31 @@ const router = createRouter({
           path: 'templates',
           name: 'admin-templates',
           component: () => import('@/views/admin/AdminTemplatesView.vue')
-        }
+        },
+        {
+          path: 'users',
+          name: 'admin-users',
+          component: () => import('@/views/admin/AdminUsersView.vue')
+        },
       ]
     },
     // ================= WORKER ROUTES =================
+{
+  path: '/workshop',
+  meta: { requiresAuth: true, role: 'WORKER' },
+  children: [
     {
-      path: '/workshop',
+      path: '',
       name: 'worker-dashboard',
       component: () => import('@/views/worker/WorkerDashboardView.vue'),
-      meta: { requiresAuth: true, role: 'WORKER' }
     },
+    {
+      path: 'quotations',
+      name: 'worker-quotations',            
+      component: () => import('@/views/worker/QuotationHistoryView.vue'),
+    },
+  ],
+},
     // ================= DEFAULT REDIRECT =================
     {
       path: '/',
@@ -57,11 +72,11 @@ router.beforeEach((to, _from, next) => {
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
     return next({ name: 'login' })
   }
-  
+
   if (to.meta.role && authStore.user?.role !== to.meta.role && authStore.user?.role !== 'ADMIN') {
     return next({ name: 'login' })
   }
-  
+
   next()
 })
 

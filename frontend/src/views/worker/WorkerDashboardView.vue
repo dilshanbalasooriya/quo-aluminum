@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useCatalogStore } from '@/stores/catalogStore'
 import { useToastStore } from '@/stores/toastStore'
 import apiClient from '@/api/axios'
@@ -56,8 +56,14 @@ const customerPhone = ref('')
 const workerFee = ref<number | ''>(DEFAULT_WORKER_FEE)
 const isSubmitting = ref(false)
 
+const isAdding = ref(false)
+
 // The PDF modal is shown while this is non-null
 const issuedQuotationId = ref<number | null>(null)
+const issuedQuotationNumber = ref('')
+// The PDF is fetched through axios (so the JWT is sent) and shown from a local blob: URL
+const pdfBlobUrl = ref('')
+const pdfStatus = ref<'idle' | 'loading' | 'ready' | 'error'>('idle')
 const pdfFrame = ref<HTMLIFrameElement | null>(null)
 const cartSection = ref<HTMLElement | null>(null)
 
@@ -75,30 +81,75 @@ const activeProfiles = computed(() => catalog.profiles.filter((p) => p.is_active
 const currentType = computed(() => catalog.aluTypes.find((t) => t.id === selectedTypeId.value))
 const currentProfile = computed(() => catalog.profiles.find((p) => p.id === selectedProfileId.value))
 
-const previewWeight = computed(() => {
-  if (!currentProfile.value) return 0
-  const weightPerMeter = Number(currentProfile.value.weight_per_meter) || 0
-  const perimeterMeters = ((toNum(widthMm.value) + toNum(heightMm.value)) * 2) / 1000
-  const totalMeters = perimeterMeters * (1 + (currentType.value?.vertical_bars_count || 0) * 0.5)
-  return Number((totalMeters * weightPerMeter * toNum(quantity.value)).toFixed(2))
+// ---------- server-side pricing ----------
+// The backend (POST /quotations/price-preview) is the single source of truth for prices, so the
+// number on screen, the saved quotation and the PDF always agree. No price maths lives in the browser.
+interface Price {
+  weight: number // total kg for the requested quantity
+  total: number // item total for the requested quantity
+}
+
+const previewWeight = ref(0)
+const previewTotal = ref(0)
+const isPricing = ref(false)
+let priceRequestId = 0
+let priceTimer: ReturnType<typeof setTimeout> | undefined
+
+const hasValidInput = () =>
+  selectedTypeId.value !== null &&
+  selectedProfileId.value !== null &&
+  toNum(widthMm.value) >= MIN_SIZE_MM &&
+  toNum(heightMm.value) >= MIN_SIZE_MM &&
+  toNum(quantity.value) >= 1
+
+async function fetchPrice(): Promise<Price | null> {
+  if (!hasValidInput()) return null
+  const qty = toNum(quantity.value)
+  const res = await apiClient.post('/quotations/price-preview', {
+    aluminium_profile_id: selectedProfileId.value,
+    window_door_type_id: selectedTypeId.value,
+    height_mm: toNum(heightMm.value),
+    width_mm: toNum(widthMm.value),
+    quantity: qty,
+  })
+  // The API returns weight per unit; item_total already includes quantity.
+  return { weight: Number((res.data.calculated_weight_kg * qty).toFixed(3)), total: res.data.item_total }
+}
+
+async function refreshPreview() {
+  const requestId = ++priceRequestId
+  isPricing.value = true
+  try {
+    const price = await fetchPrice()
+    if (requestId !== priceRequestId) return // a newer request replaced this one
+    previewWeight.value = price?.weight ?? 0
+    previewTotal.value = price?.total ?? 0
+  } catch {
+    if (requestId === priceRequestId) {
+      previewWeight.value = 0
+      previewTotal.value = 0
+    }
+  } finally {
+    if (requestId === priceRequestId) isPricing.value = false
+  }
+}
+
+// Debounced so typing "1200" doesn't fire four requests
+watch([selectedTypeId, selectedProfileId, widthMm, heightMm, quantity], () => {
+  clearTimeout(priceTimer)
+  priceTimer = setTimeout(refreshPreview, 250)
 })
 
-const previewTotal = computed(() => {
-  if (!currentProfile.value) return 0
-  const ratePerKg = Number(currentProfile.value.rate_per_kg) || 0
-  return Number((previewWeight.value * ratePerKg).toFixed(2))
+onBeforeUnmount(() => {
+  clearTimeout(priceTimer)
+  if (pdfBlobUrl.value) URL.revokeObjectURL(pdfBlobUrl.value)
 })
 
 const cartSubtotal = computed(() => cartItems.value.reduce((sum, item) => sum + item.item_total, 0))
 const cartGrandTotal = computed(() => Number((cartSubtotal.value + toNum(workerFee.value)).toFixed(2)))
 
-const pdfUrl = computed(() => {
-  if (issuedQuotationId.value === null) return ''
-  return `${apiClient.defaults.baseURL || ''}/quotations/quot-pdf/${issuedQuotationId.value}/invoice.pdf`
-})
-
 // ---------- cart actions ----------
-function handleAddToCart() {
+async function handleAddToCart() {
   const type = currentType.value
   const profile = currentProfile.value
   if (!type || !profile) {
@@ -107,6 +158,21 @@ function handleAddToCart() {
   }
   if (toNum(widthMm.value) < MIN_SIZE_MM || toNum(heightMm.value) < MIN_SIZE_MM || toNum(quantity.value) < 1) {
     toast.error(`Width and height must be at least ${MIN_SIZE_MM} mm and quantity at least 1.`)
+    return
+  }
+
+  // Price the item on the server right now so the cart never holds a stale figure
+  isAdding.value = true
+  let price: Price | null = null
+  try {
+    price = await fetchPrice()
+  } catch {
+    price = null
+  } finally {
+    isAdding.value = false
+  }
+  if (!price) {
+    toast.error('Could not price this item. Please try again.')
     return
   }
 
@@ -119,8 +185,8 @@ function handleAddToCart() {
     width_mm: toNum(widthMm.value),
     height_mm: toNum(heightMm.value),
     quantity: toNum(quantity.value),
-    calculated_weight_kg: previewWeight.value,
-    item_total: previewTotal.value,
+    calculated_weight_kg: price.weight,
+    item_total: price.total,
   })
   toast.success('Item added to quotation batch.')
 }
@@ -172,38 +238,71 @@ async function handleConfirmQuotation() {
       })),
     })
     issuedQuotationId.value = res.data.id
+    issuedQuotationNumber.value = res.data.quotation_number ?? ''
     toast.success('Quotation issued successfully!')
   } catch {
     toast.error('Failed to issue quotation.')
+    return
   } finally {
     isSubmitting.value = false
   }
+  await loadPdf()
 }
 
 function handleCloseAndNew() {
+  releasePdf()
   issuedQuotationId.value = null
+  issuedQuotationNumber.value = ''
   clearDraft()
 }
 
-// ---------- PDF actions ----------
+// ---------- PDF ----------
+function releasePdf() {
+  if (pdfBlobUrl.value) URL.revokeObjectURL(pdfBlobUrl.value)
+  pdfBlobUrl.value = ''
+  pdfStatus.value = 'idle'
+}
+
+// The backend renders the PDF; we fetch it with axios so the Authorization header is included.
+async function loadPdf() {
+  if (issuedQuotationId.value === null) return
+  releasePdf()
+  pdfStatus.value = 'loading'
+  try {
+    const res = await apiClient.get(`/quotations/quot-pdf/${issuedQuotationId.value}/invoice.pdf`, {
+      responseType: 'blob',
+    })
+    pdfBlobUrl.value = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+    pdfStatus.value = 'ready'
+  } catch {
+    pdfStatus.value = 'error'
+    toast.error('Quotation was saved, but the PDF could not be loaded.')
+  }
+}
+
+const pdfFileName = computed(() => `Quotation_${issuedQuotationNumber.value || issuedQuotationId.value}.pdf`)
+
 function handleDownloadPdf() {
-  if (pdfUrl.value) window.open(pdfUrl.value, '_blank')
+  if (!pdfBlobUrl.value) return
+  const a = document.createElement('a')
+  a.href = pdfBlobUrl.value
+  a.download = pdfFileName.value
+  a.click()
 }
 
 function handlePrintPdf() {
-  if (pdfFrame.value?.contentWindow) pdfFrame.value.contentWindow.print()
-  else handleDownloadPdf()
+  // Same-origin blob: URL, so printing the iframe works
+  pdfFrame.value?.contentWindow?.print()
 }
 
-function handleSharePdf() {
-  if (!pdfUrl.value) return
-  if (navigator.share) {
-    navigator
-      .share({ title: 'Aluminium Quotation', text: `Quotation for ${customerName.value}`, url: pdfUrl.value })
-      .catch(() => {})
+async function handleSharePdf() {
+  if (!pdfBlobUrl.value) return
+  const blob = await (await fetch(pdfBlobUrl.value)).blob()
+  const file = new File([blob], pdfFileName.value, { type: 'application/pdf' })
+  if (navigator.canShare?.({ files: [file] })) {
+    navigator.share({ files: [file], title: 'Aluminium Quotation', text: `Quotation for ${customerName.value}` }).catch(() => {})
   } else {
-    navigator.clipboard.writeText(pdfUrl.value)
-    toast.success('PDF link copied to clipboard!')
+    handleDownloadPdf() // browsers that can't share files: download instead
   }
 }
 </script>
@@ -275,7 +374,7 @@ function handleSharePdf() {
         <div class="flex items-center justify-between gap-3">
           <div class="min-w-0">
             <p class="text-xs text-slate-500">{{ previewWeight }} kg estimated</p>
-            <p class="text-xl font-extrabold leading-tight text-emerald-600 dark:text-emerald-400">
+            <p class="text-xl font-extrabold leading-tight text-emerald-600 dark:text-emerald-400" :class="{ 'opacity-50': isPricing }">
               {{ formatMoney(previewTotal) }}
             </p>
             <button
@@ -289,8 +388,9 @@ function handleSharePdf() {
           </div>
           <button
             type="button"
+            :disabled="isAdding"
             @click="handleAddToCart"
-            class="shrink-0 rounded-xl bg-slate-950 px-4 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-slate-900 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
+            class="shrink-0 rounded-xl bg-slate-950 px-4 py-3 disabled:opacity-50 text-sm font-bold text-white shadow-sm transition-colors hover:bg-slate-900 dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
           >
             + Add to quotation
           </button>
@@ -466,9 +566,9 @@ function handleSharePdf() {
             <p class="text-xs text-slate-500">Preview the final PDF invoice below or use the actions.</p>
           </div>
           <div class="flex flex-wrap items-center gap-2">
-            <button type="button" :class="pdfActionClass" @click="handlePrintPdf">🖨 Print</button>
-            <button type="button" :class="pdfActionClass" @click="handleDownloadPdf">📥 Download</button>
-            <button type="button" :class="pdfActionClass" @click="handleSharePdf">🔗 Share</button>
+            <button type="button" :class="pdfActionClass" :disabled="pdfStatus !== 'ready'" @click="handlePrintPdf">🖨 Print</button>
+            <button type="button" :class="pdfActionClass" :disabled="pdfStatus !== 'ready'" @click="handleDownloadPdf">📥 Download</button>
+            <button type="button" :class="pdfActionClass" :disabled="pdfStatus !== 'ready'" @click="handleSharePdf">🔗 Share</button>
             <button
               type="button"
               class="rounded-lg bg-rose-600 px-3 py-1.5 text-xs font-bold text-white hover:bg-rose-500"
@@ -480,7 +580,18 @@ function handleSharePdf() {
         </div>
 
         <div class="w-full flex-1 overflow-hidden rounded-xl border border-slate-200 bg-slate-100 dark:border-slate-800 dark:bg-slate-950">
-          <iframe ref="pdfFrame" :src="pdfUrl" class="h-full w-full" title="Quotation PDF preview"></iframe>
+          <iframe
+            v-if="pdfStatus === 'ready'"
+            ref="pdfFrame"
+            :src="pdfBlobUrl"
+            class="h-full w-full"
+            title="Quotation PDF preview"
+          ></iframe>
+          <div v-else-if="pdfStatus === 'error'" class="flex h-full flex-col items-center justify-center gap-3 text-sm text-slate-600 dark:text-slate-400">
+            <p>The PDF could not be loaded.</p>
+            <button type="button" :class="pdfActionClass" @click="loadPdf">Try again</button>
+          </div>
+          <div v-else class="flex h-full items-center justify-center text-sm text-slate-500">Generating PDF…</div>
         </div>
       </div>
     </div>
