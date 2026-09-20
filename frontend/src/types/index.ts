@@ -61,6 +61,14 @@ export interface TypeCreate {
   horizontal_bars_count?: number
 }
 
+export interface TypeUpdate {
+  type_name?: string
+  category?: CategoryEnum
+  vertical_bars_count?: number
+  horizontal_bars_count?: number
+  is_active?: boolean
+}
+
 export interface TypeOut {
   id: number
   type_name: string

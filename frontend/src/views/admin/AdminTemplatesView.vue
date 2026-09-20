@@ -70,10 +70,12 @@ async function handleSubmit() {
   }
 }
 
-async function handleDeactivate(id: number) {
+// Toggle between Active and Inactive
+async function handleToggleStatus(t: TypeOut) {
   try {
-    await apiClient.delete(`/admin/window-door-types/${id}`)
-    toast.success('Template status updated.')
+    const newStatus = !t.is_active
+    await apiClient.patch(`/admin/window-door-types/${t.id}`, { is_active: newStatus })
+    toast.success(`Template ${newStatus ? 'activated' : 'deactivated'} successfully.`)
     catalog.invalidateCache()
     fetchTypes()
   } catch (err) {
@@ -109,7 +111,7 @@ onMounted(() => {
             <span class="text-xs font-bold uppercase tracking-wider px-2.5 py-1 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-700 dark:text-slate-300">
               {{ t.category }}
             </span>
-            <span :class="t.is_active ? 'text-emerald-500' : 'text-rose-500'" class="text-xs font-semibold">
+            <span :class="t.is_active ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'" class="px-2.5 py-1 rounded-full text-xs font-bold">
               {{ t.is_active ? 'Active' : 'Inactive' }}
             </span>
           </div>
@@ -134,7 +136,11 @@ onMounted(() => {
           <button @click="openEditModal(t)" class="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline">
             Edit
           </button>
-          <button @click="handleDeactivate(t.id)" class="text-xs font-semibold text-rose-600 dark:text-rose-400 hover:underline">
+          <button 
+            @click="handleToggleStatus(t)" 
+            :class="t.is_active ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'"
+            class="text-xs font-semibold hover:underline"
+          >
             {{ t.is_active ? 'Deactivate' : 'Activate' }}
           </button>
         </div>
