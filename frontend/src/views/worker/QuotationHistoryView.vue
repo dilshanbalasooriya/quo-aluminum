@@ -11,7 +11,7 @@ const LIST_URL = '/quotations'
 const pdfUrlFor = (id: number) => `/quotations/quot-pdf/${id}/invoice.pdf`
 
 // Change this one constant to switch the page's currency (e.g. to 'Rs. ').
-const CURRENCY_SYMBOL = '$'
+const CURRENCY_SYMBOL = 'Rs.'
 const PAGE_SIZE = 20
 
 const formatMoney = (v: number) => `${CURRENCY_SYMBOL}${v.toLocaleString()}`

@@ -20,6 +20,7 @@ const authStore = useAuthStore()
 const pageTitle = computed(() => {
   if (route.name === 'admin-dashboard') return 'Admin Dashboard'
   if (route.name === 'worker-dashboard') return 'Estimation Workshop'
+  if (route.name === 'worker-quotations') return 'Saved Quotations'
   return 'Aluminium Estimator'
 })
 

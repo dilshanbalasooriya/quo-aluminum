@@ -1,10 +1,13 @@
-from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+from datetime import datetime
 from decimal import Decimal
 from typing import List, Optional
+
 
 from fastapi import APIRouter, Depends, HTTPException,Response
 from pydantic import BaseModel, ConfigDict
 from sqlmodel import Session, select
+from sqlalchemy.exc import IntegrityError
 
 from database.connection import DatabaseManager
 from database.models import (
@@ -71,7 +74,9 @@ class QuotationItemCreate(BaseModel):
 class CreateQuotationRequest(BaseModel):
     customer_name: str
     customer_phone: Optional[str] = ""
+    worker_fee: Optional[float] = 0.0
     items: List[QuotationItemCreate]
+    
 
 
 class QuotationItemResponse(BaseModel):
@@ -100,21 +105,17 @@ class QuotationResponse(BaseModel):
     items: List[QuotationItemResponse]
 
 
-# --- Helper Functions ---
 
 def _generate_quotation_number(session: Session) -> str:
-    """Generates sequential ID in QT-YYYYMMDD-0001 format."""
-    today_str = datetime.now(timezone.utc).strftime("%Y%m%d")
-    prefix = f"QT-{today_str}-"
-    
-    # Count existing quotes for today to format sequence
-    statement = select(Quotation).where(Quotation.quotation_number.startswith(prefix))
-    today_quotes = session.exec(statement).all()
-    next_seq = len(today_quotes) + 1
-    
+    today = datetime.now(ZoneInfo("Asia/Colombo")).strftime("%Y%m%d")
+    prefix = f"QT-{today}-"
+    last = session.exec(
+        select(Quotation.quotation_number)
+        .where(Quotation.quotation_number.startswith(prefix))
+        .order_by(Quotation.quotation_number.desc())
+    ).first()
+    next_seq = int(last.rsplit("-", 1)[1]) + 1 if last else 1
     return f"{prefix}{next_seq:04d}"
-
-
 # --- Routes ---
 
 @router.post("/price-preview", response_model=PricePreviewResponse)
@@ -151,6 +152,30 @@ def price_preview(
     )
 
 
+@router.get("")
+def list_quotations(
+    session: Session = Depends(DatabaseManager.get_session),
+    current_user: User = Depends(get_current_user),
+):
+    rows = session.exec(
+        select(Quotation, Customer)
+        .join(Customer, Customer.id == Quotation.customer_id)
+        .order_by(Quotation.id.desc())
+    ).all()
+    return [
+        {
+            "id": q.id,
+            "quotation_number": q.quotation_number,
+            "customer_name": c.name,
+            "customer_phone": c.phone,
+            "subtotal": q.subtotal,
+            "worker_fee": q.worker_fee,
+            "total": q.subtotal + q.worker_fee,
+            "created_at": q.created_at,
+        }
+        for q, c in rows
+    ]
+
 @router.post("", response_model=QuotationResponse)
 def create_quotation(
     payload: CreateQuotationRequest,
@@ -160,12 +185,20 @@ def create_quotation(
     if not payload.items:
         raise HTTPException(400, "At least one item is required to create a quotation.")
 
-#TODO 
 # Fee need to get from the worker. worker can deside the working fee.
     # 1. Fetch worker fee from settings table
-    fee_setting = session.get(Setting, "default_worker_fee")
-    worker_fee = Decimal(fee_setting.value) if fee_setting else Decimal("0.00")
+      
+    if payload.worker_fee is not None:
+        worker_fee = Decimal(str(payload.worker_fee))
+    else:
+        fee_setting = session.get(Setting, "default_worker_fee")
+        if not fee_setting:
+            raise HTTPException(500, "Default worker fee is not configured.")
+        worker_fee = Decimal(fee_setting.value)
 
+    if worker_fee < 0:
+        raise HTTPException(400, "Worker fee cannot be negative.")
+    
     # 2. Create simplified Customer record
     customer = Customer(
         name=payload.customer_name,
@@ -225,7 +258,11 @@ def create_quotation(
         items=quotation_items,
     )
     session.add(quotation)
-    session.commit()
+    try:
+        session.commit()
+    except IntegrityError:
+        session.rollback()
+        raise HTTPException(409, "Another quotation was issued at the same moment. Please try again.")
     session.refresh(quotation)
 
     return QuotationResponse(
@@ -254,7 +291,7 @@ def create_quotation(
     )
 
 
-@router.get("quot-pdf/{quotation_id}/invoice.pdf")
+@router.get("/quot-pdf/{quotation_id}/invoice.pdf")
 def generate_quotation_pdf(
     quotation_id: int,
     session: Session = Depends(DatabaseManager.get_session),

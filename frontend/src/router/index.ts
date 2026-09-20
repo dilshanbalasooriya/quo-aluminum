@@ -38,22 +38,22 @@ const router = createRouter({
       ]
     },
     // ================= WORKER ROUTES =================
-{
-  path: '/workshop',
-  meta: { requiresAuth: true, role: 'WORKER' },
-  children: [
     {
-      path: '',
-      name: 'worker-dashboard',
-      component: () => import('@/views/worker/WorkerDashboardView.vue'),
+      path: '/workshop',
+      meta: { requiresAuth: true, role: 'WORKER' },
+      children: [
+        {
+          path: '',
+          name: 'worker-dashboard',
+          component: () => import('@/views/worker/WorkerDashboardView.vue'),
+        },
+        {
+          path: 'quotations',
+          name: 'worker-quotations',            
+          component: () => import('@/views/worker/QuotationHistoryView.vue'),
+        },
+      ],
     },
-    {
-      path: 'quotations',
-      name: 'worker-quotations',            
-      component: () => import('@/views/worker/QuotationHistoryView.vue'),
-    },
-  ],
-},
     // ================= DEFAULT REDIRECT =================
     {
       path: '/',
