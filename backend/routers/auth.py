@@ -38,7 +38,7 @@ class PasswordReset(BaseModel):
 
 # --- Endpoints ---
 
-@router.post("/register-worker", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
+@router.post("/users", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register_worker(
     user_data: UserRegister,
     session: Session = Depends(DatabaseManager.get_session),
