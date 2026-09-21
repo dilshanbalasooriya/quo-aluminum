@@ -17,17 +17,17 @@ function isActive(routeName: string) {
 
 <template>
   <aside
-    class="bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-all duration-300 z-20 shrink-0 select-none"
-    :class="isCollapsed ? 'w-16' : 'w-64'">
+    class="bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col transition-all duration-300 z-30 shrink-0 select-none absolute md:relative h-full"
+    :class="isCollapsed ? '-translate-x-full w-64 md:translate-x-0 md:w-16' : 'translate-x-0 w-64'">
     <!-- Brand Header -->
     <div class="h-16 flex items-center px-4 border-b border-slate-200 dark:border-slate-700 overflow-hidden">
       <div class="flex items-center space-x-3">
         <div
-          class="w-9 h-9 rounded-xl bg-slate-900 dark:bg-sky-500 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
+          class="w-9 h-9 rounded-xl bg-slate-900 dark:bg-amber-500 text-white flex items-center justify-center font-bold text-lg shrink-0 shadow-sm">
           Al
         </div>
         <span v-if="!isCollapsed" class="font-bold text-slate-900 dark:text-white truncate tracking-tight">
-          Estimator Pro
+          QUO-Alumininum
         </span>
       </div>
     </div>

@@ -10,7 +10,7 @@ const toast = useToastStore()
 
 // ---------- helpers ----------
 // Change this one constant to switch the whole page (e.g. to 'Rs. ').
-const CURRENCY_SYMBOL = 'RS'
+const CURRENCY_SYMBOL = 'Rs'
 const MIN_SIZE_MM = 100
 const DEFAULT_WORKER_FEE = 500
 
@@ -338,7 +338,7 @@ async function handleSharePdf() {
     <div class="flex flex-col gap-4 lg:grid lg:grid-cols-12 lg:gap-6">
       <!-- Workspace: live preview + size inputs + live price, all in one pinned panel -->
       <section
-        class="sticky top-2 z-20 space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-4 lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1 lg:top-6 lg:space-y-4 lg:self-start [@media(max-height:30rem)]:static"
+        class="order-3 lg:order-none static z-20 space-y-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-md dark:border-slate-800 dark:bg-slate-900 sm:p-4 lg:sticky lg:top-6 lg:col-span-5 lg:col-start-8 lg:row-span-2 lg:row-start-1 lg:space-y-4 lg:self-start"
       >
         <!-- Drawing height is capped (22dvh phone / 28dvh tablet / 40dvh desktop) so the panel always fits -->
         <div class="[&_svg]:mx-auto [&_svg]:max-h-[22dvh] sm:[&_svg]:max-h-[28dvh] lg:[&_svg]:max-h-[40dvh]">
@@ -398,7 +398,7 @@ async function handleSharePdf() {
       </section>
 
       <!-- 1. Style -->
-      <section :class="[cardClass, 'space-y-4 lg:col-span-7 lg:col-start-1 lg:row-start-1']">
+      <section :class="[cardClass, 'order-1 lg:order-none space-y-4 lg:col-span-7 lg:col-start-1 lg:row-start-1']">
         <h2 :class="headingClass">1. Select window / door style</h2>
         <div class="grid grid-cols-2 gap-3 sm:grid-cols-3">
           <button
@@ -449,7 +449,7 @@ async function handleSharePdf() {
       </section>
 
       <!-- 2. Profile -->
-      <section :class="[cardClass, 'space-y-4 lg:col-span-7 lg:col-start-1 lg:row-start-2']">
+      <section :class="[cardClass, 'order-2 lg:order-none space-y-4 lg:col-span-7 lg:col-start-1 lg:row-start-2']">
         <h2 :class="headingClass">2. Select aluminium profile & gauge</h2>
         <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <button
