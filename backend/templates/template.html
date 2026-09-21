@@ -188,9 +188,9 @@
   <thead>
     <tr>
       <th>Item Specification</th>
-      <th class="right">Unit Price (LKR)</th>
+      <th class="right">Unit Price (Rs)</th>
       <th class="center">Qty</th>
-      <th class="right">Total (LKR)</th>
+      <th class="right">Total (Rs)</th>
     </tr>
   </thead>
   <tbody>
@@ -216,15 +216,15 @@
     <table class="summary-table">
       <tr>
         <td class="label">Subtotal</td>
-        <td class="amount">LKR {{ "{:,.2f}".format(quotation.subtotal) }}</td>
+        <td class="amount">Rs {{ "{:,.2f}".format(quotation.subtotal) }}</td>
       </tr>
       <tr>
         <td class="label">Worker Fee ({{ worker_fee_pct }}%)</td>
-        <td class="amount">LKR {{ "{:,.2f}".format(quotation.worker_fee) }}</td>
+        <td class="amount">Rs {{ "{:,.2f}".format(quotation.worker_fee) }}</td>
       </tr>
       <tr class="total-row">
         <td class="label">Total</td>
-        <td class="amount">LKR {{ "{:,.2f}".format(quotation.total_amount) }}</td>
+        <td class="amount">Rs {{ "{:,.2f}".format(quotation.total_amount) }}</td>
       </tr>
     </table>
     <div class="clear"></div>

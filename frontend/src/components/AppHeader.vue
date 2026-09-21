@@ -21,7 +21,7 @@ const pageTitle = computed(() => {
   if (route.name === 'admin-dashboard') return 'Admin Dashboard'
   if (route.name === 'worker-dashboard') return 'Estimation Workshop'
   if (route.name === 'worker-quotations') return 'Saved Quotations'
-  return 'Aluminium Estimator'
+  return 'QUO-Alumininum'
 })
 
 async function handleLogout() {
@@ -63,7 +63,7 @@ async function handleLogout() {
           <div class="text-sm font-semibold text-slate-800 dark:text-slate-200 leading-tight">
             {{ authStore.user.username }}
           </div>
-          <div class="text-[10px] font-bold tracking-wider text-sky-600 dark:text-sky-400 uppercase">
+          <div class="text-[10px] font-bold tracking-wider text-amber-600 dark:text-amber-400 uppercase">
             {{ authStore.user.role }}
           </div>
         </div>
