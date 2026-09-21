@@ -4,6 +4,6 @@
       <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
       <span>FastAPI Backend Connected</span>
     </div>
-    <div>Aluminium Estimator v1.0.0</div>
+    <div>QUO-Alumininum v1.0.0</div>
   </footer>
 </template>
