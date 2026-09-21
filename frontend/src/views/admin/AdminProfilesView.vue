@@ -123,15 +123,15 @@ onMounted(() => {
     </div>
 
     <!-- Profiles Table with High Contrast & Clear Actions -->
-    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-hidden shadow-sm">
-      <table class="w-full text-left border-collapse">
+    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl overflow-x-auto shadow-sm">
+      <table class="w-full text-left border-collapse min-w-[800px]">
         <thead>
           <tr class="border-b border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
             <th class="p-4">Profile Name</th>
             <th class="p-4">Brand</th>
             <th class="p-4">Gauge</th>
             <th class="p-4">Weight (kg/m)</th>
-            <th class="p-4">Rate ($/kg)</th>
+            <th class="p-4">Rate (Rs/kg)</th>
             <th class="p-4">Status</th>
             <th class="p-4 text-right">Actions</th>
           </tr>
@@ -142,7 +142,7 @@ onMounted(() => {
             <td class="p-4 text-slate-600 dark:text-slate-400">{{ p.brand || '-' }}</td>
             <td class="p-4 font-medium">{{ p.gauge }}</td>
             <td class="p-4 font-medium">{{ p.weight_per_meter }}</td>
-            <td class="p-4 font-bold text-emerald-600 dark:text-emerald-400">${{ p.rate_per_kg }}</td>
+            <td class="p-4 font-bold text-emerald-600 dark:text-emerald-400">Rs {{ p.rate_per_kg }}</td>
             <td class="p-4">
               <span :class="p.is_active ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300' : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'" class="px-2.5 py-1 rounded-full text-xs font-bold">
                 {{ p.is_active ? 'Active' : 'Inactive' }}
@@ -198,7 +198,7 @@ onMounted(() => {
               <input v-model.number="form.weight_per_meter" type="number" step="0.01" required class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white" />
             </div>
             <div>
-              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-600 mb-1">Rate/kg ($)</label>
+              <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-600 mb-1">Rate/kg (Rs)</label>
               <input v-model.number="form.rate_per_kg" type="number" step="0.01" required class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-white" />
             </div>
           </div>

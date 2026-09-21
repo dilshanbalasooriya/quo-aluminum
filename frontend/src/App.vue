@@ -12,7 +12,7 @@ const route = useRoute()
 const authStore = useAuthStore()
 
 // State for sidebar collapsing
-const isSidebarCollapsed = ref(false)
+const isSidebarCollapsed = ref(window.innerWidth < 768)
 
 function toggleSidebar() {
   isSidebarCollapsed.value = !isSidebarCollapsed.value
@@ -28,8 +28,15 @@ const showLayoutShell = computed(() => {
   <div class="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 flex flex-col font-sans antialiased transition-colors duration-200">
     
     <!-- 1. FULL APP SHELL (Renders when logged in) -->
-    <div v-if="showLayoutShell" class="flex h-screen overflow-hidden">
+    <div v-if="showLayoutShell" class="flex h-screen overflow-hidden relative">
       
+      <!-- Mobile Backdrop Overlay -->
+      <div v-if="!isSidebarCollapsed" 
+           @click="toggleSidebar"
+           class="fixed inset-0 bg-slate-950/50 backdrop-blur-sm z-20 md:hidden" 
+           aria-hidden="true">
+      </div>
+
       <!-- Collapsible Role-Based Sidebar -->
       <AppSidebar :is-collapsed="isSidebarCollapsed" />
 
