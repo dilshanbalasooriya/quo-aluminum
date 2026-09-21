@@ -33,7 +33,6 @@ from services.security import get_current_user
 import os
 from pathlib import Path
 from jinja2 import Environment, FileSystemLoader
-from weasyprint import HTML
 
 
 
@@ -327,8 +326,16 @@ def generate_quotation_pdf(
         **company_context,
     )
 
-    # 5. Generate PDF with WeasyPrint
-    pdf_bytes = HTML(string=rendered_html).write_pdf()
+    # 5. Generate PDF with xhtml2pdf
+    from xhtml2pdf import pisa
+    from io import BytesIO
+    pdf_buffer = BytesIO()
+    pisa_status = pisa.CreatePDF(
+        rendered_html, dest=pdf_buffer
+    )
+    if pisa_status.err:
+        raise HTTPException(status_code=500, detail="PDF generation failed")
+    pdf_bytes = pdf_buffer.getvalue()
 
     return Response(
         content=pdf_bytes,
