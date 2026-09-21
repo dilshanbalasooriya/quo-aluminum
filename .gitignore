@@ -11,3 +11,4 @@ aluminium_quotation.db/
 aluminium_quotation.db-journal/
 aluminium_quotation.db
 backend/seed.py
+backend/aluminium_quotation.db
