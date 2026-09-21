@@ -60,7 +60,7 @@ async function handleLogin() {
           Al
         </div>
         <h2 class="text-2xl font-bold tracking-tight text-slate-900">
-          Aluminium Estimator
+          QUO-Alumininum
         </h2>
         <p class="mt-2 text-sm text-slate-500">
           Sign in to access your estimation workshop
