@@ -11,4 +11,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 # Use 'fastapi dev' for hot-reloading inside the container
-CMD ["fastapi", "dev", "app/app.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["fastapi", "dev", "app.py", "--host", "0.0.0.0", "--port", "8000"]
