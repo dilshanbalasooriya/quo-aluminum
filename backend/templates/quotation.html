@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @page {
+    size: A4;
+    margin: 20mm 15mm 20mm 15mm;
+  }
+  body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    color: #333333;
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .header-table {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  .header-table td {
+    vertical-align: top;
+  }
+  .logo {
+    max-height: 65px;
+  }
+  .company-info {
+    text-align: right;
+    font-size: 11px;
+    color: #555555;
+  }
+  .title {
+    text-align: center;
+    color: #2e7d32;
+    font-size: 26px;
+    font-weight: bold;
+    letter-spacing: 2px;
+    margin: 15px 0 25px 0;
+  }
+  .meta-table {
+    width: 100%;
+    margin-bottom: 25px;
+  }
+  .meta-table td {
+    width: 50%;
+    vertical-align: top;
+  }
+  .meta-label {
+    font-weight: bold;
+    color: #222222;
+  }
+  
+  /* Main Table */
+  .items-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 20px;
+  }
+  .items-table th {
+    background-color: #2e7d32;
+    color: #ffffff;
+    padding: 10px;
+    text-align: left;
+    font-size: 12px;
+  }
+  .items-table th.right, .items-table td.right {
+    text-align: right;
+  }
+  .items-table th.center, .items-table td.center {
+    text-align: center;
+  }
+  .items-table td {
+    padding: 10px;
+    border-bottom: 1px solid #e0e0e0;
+    background-color: #fdfdfd;
+  }
+
+  /* Summary Section */
+  .summary-wrapper {
+    width: 100%;
+    margin-top: 10px;
+    margin-bottom: 40px;
+  }
+  .summary-table {
+    width: 45%;
+    float: right;
+    border-collapse: collapse;
+  }
+  .summary-table td {
+    padding: 6px 10px;
+  }
+  .summary-table .label {
+    text-align: left;
+    font-weight: bold;
+    color: #444;
+  }
+  .summary-table .amount {
+    text-align: right;
+  }
+  .summary-table .total-row td {
+    background-color: #2e7d32;
+    color: #ffffff;
+    font-weight: bold;
+    font-size: 14px;
+  }
+
+  .clear {
+    clear: both;
+  }
+
+  /* Footer Section */
+  .divider {
+    border-top: 2px solid #2e7d32;
+    margin-top: 30px;
+    margin-bottom: 15px;
+  }
+  .terms-header {
+    font-weight: bold;
+    font-size: 12px;
+    margin-bottom: 5px;
+  }
+  .terms-text {
+    font-size: 10px;
+    color: #666666;
+    margin-bottom: 30px;
+  }
+  .confirm-text {
+    font-weight: bold;
+    text-align: center;
+    font-size: 11px;
+    margin-bottom: 50px;
+    letter-spacing: 0.5px;
+  }
+  .signature-table {
+    width: 100%;
+  }
+  .signature-line {
+    border-top: 1px solid #777777;
+    width: 80%;
+    margin: 0 auto 5px auto;
+  }
+  .signature-caption {
+    text-align: center;
+    font-size: 10px;
+    color: #555555;
+  }
+</style>
+</head>
+<body>
+
+  <!-- Company Header -->
+  <table class="header-table">
+    <tr>
+      <td>
+        {% if company_logo %}
+        <img src="{{ company_logo }}" class="logo" alt="Logo" />
+        {% endif %}
+      </td>
+      <td class="company-info">
+        <div><strong>{{ company_name }}</strong></div>
+        <div>{{ company_address }}</div>
+        <div>{{ company_phone }}</div>
+        <div>{{ company_website }}</div>
+      </td>
+    </tr>
+  </table>
+
+  <!-- Document Title -->
+  <div class="title">QUOTATION</div>
+
+  <!-- Meta Info -->
+  <table class="meta-table">
+    <tr>
+      <td>
+        <div><span class="meta-label">Quotation No:</span> #{{ quotation.quotation_number }}</div>
+        <div><span class="meta-label">Date:</span> {{ quotation.created_at.strftime('%m/%d/%Y') }}</div>
+      </td>
+      <td style="text-align: right;">
+        <div><span class="meta-label">Customer Name:</span> {{ customer.name }}</div>
+        {% if customer.phone %}
+        <div><span class="meta-label">Phone:</span> {{ customer.phone }}</div>
+        {% endif %}
+      </td>
+    </tr>
+  </table>
+
+<!-- Items Table without images -->
+<table class="items-table">
+  <thead>
+    <tr>
+      <th>Item Specification</th>
+      <th class="right">Unit Price (Rs)</th>
+      <th class="center">Qty</th>
+      <th class="right">Total (Rs)</th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for item in items %}
+    <tr>
+      <td>
+        <strong>{{ item.window_door_type.type_name }}</strong><br>
+        <span style="color: #555; font-size: 11px;">
+          {{ item.profile.profile_name }} (Gauge: {{ item.profile.gauge }}) | 
+          Size: {{ (item.height_mm / 1000) | round(2) }}m × {{ (item.width_mm / 1000) | round(2) }}m
+        </span>
+      </td>
+      <td class="right">{{ "{:,.2f}".format(item.item_frame_cost) }}</td>
+      <td class="center">{{ item.quantity }}</td>
+      <td class="right">{{ "{:,.2f}".format(item.item_total) }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+  <!-- Summary Table -->
+  <div class="summary-wrapper">
+    <table class="summary-table">
+      <tr>
+        <td class="label">Subtotal</td>
+        <td class="amount">Rs {{ "{:,.2f}".format(quotation.subtotal) }}</td>
+      </tr>
+      <tr>
+        <td class="label">Worker Fee ({{ worker_fee_pct }}%)</td>
+        <td class="amount">Rs {{ "{:,.2f}".format(quotation.worker_fee) }}</td>
+      </tr>
+      <tr class="total-row">
+        <td class="label">Total</td>
+        <td class="amount">Rs {{ "{:,.2f}".format(quotation.total_amount) }}</td>
+      </tr>
+    </table>
+    <div class="clear"></div>
+  </div>
+
+  <!-- Footer & Terms -->
+  <div class="divider"></div>
+  <div class="terms-header">TERMS & CONDITIONS</div>
+  <div class="terms-text">
+    Above information is not an invoice and only an estimate of goods/services. Payment will be due prior to provision or delivery of goods/services.
+  </div>
+
+  <div class="confirm-text">PLEASE CONFIRM YOUR ACCEPTANCE OF THIS QUOTE</div>
+
+  <table class="signature-table">
+    <tr>
+      <td style="width: 50%;">
+        <div class="signature-line"></div>
+        <div class="signature-caption">Signature over printed name</div>
+      </td>
+      <td style="width: 50%;">
+        <div class="signature-line"></div>
+        <div class="signature-caption">Date signed</div>
+      </td>
+    </tr>
+  </table>
+
+</body>
+</html>

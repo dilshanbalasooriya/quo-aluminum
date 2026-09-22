@@ -1,0 +1,47 @@
+
+services:
+  # 1. PostgreSQL Database
+  db:
+    image: postgres:16
+    container_name: app_postgres
+    restart: always
+    env_file:
+      - ./backend/.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # 2. FastAPI Backend
+  backend:
+    build: ./backend
+    container_name: app_backend
+    restart: always
+    # Mount local backend code for hot-reloading on host code changes
+    volumes:
+      - ./backend:/app
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+
+  # 3. Vue.js Frontend
+  frontend:
+    build: ./frontend
+    container_name: app_frontend
+    restart: always
+    # Mount local frontend code for hot-reloading; preserve container node_modules
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5000:5000"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
