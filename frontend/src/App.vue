@@ -7,6 +7,7 @@ import AppHeader from '@/components/AppHeader.vue'
 import AppSidebar from '@/components/AppSidebar.vue'
 import AppFooter from '@/components/AppFooter.vue'
 import AppToast from '@/components/AppToast.vue'
+import AppConfirmDialog from '@/components/AppConfirmDialog.vue'
 
 const route = useRoute()
 const authStore = useAuthStore()
@@ -66,6 +67,7 @@ const showLayoutShell = computed(() => {
 
     <!-- Global Toast Alert Overlay (Always Active) -->
     <AppToast />
+    <AppConfirmDialog />
 
   </div>
 </template>

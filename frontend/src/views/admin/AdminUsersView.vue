@@ -2,6 +2,7 @@
 import { ref, onMounted } from 'vue'
 import apiClient from '@/api/axios'
 import { useToastStore } from '@/stores/toastStore'
+import { useConfirmStore } from '@/stores/confirmStore'
 
 interface UserOut {
   id: number
@@ -18,10 +19,17 @@ interface UserCreate {
   role: 'ADMIN' | 'WORKER'
 }
 
+interface UserUpdate {
+  username: string
+  password?: string
+}
+
 const toast = useToastStore()
+const confirmStore = useConfirmStore()
 const users = ref<UserOut[]>([])
 const loading = ref(false)
 const showModal = ref(false)
+const editingUserId = ref<number | null>(null)
 
 const form = ref<UserCreate>({
   username: '',
@@ -29,6 +37,7 @@ const form = ref<UserCreate>({
   password: '',
   role: 'WORKER',
 })
+const editForm = ref<UserUpdate>({ username: '' })
 
 async function fetchUsers() {
   loading.value = true
@@ -54,6 +63,27 @@ async function handleCreateUser() {
   }
 }
 
+function openEditUser(user: UserOut) {
+  editingUserId.value = user.id
+  editForm.value = { username: user.username, password: '' }
+}
+
+async function handleEditUser() {
+  if (editingUserId.value === null) return
+  try {
+    const payload = {
+      username: editForm.value.username,
+      ...(editForm.value.password ? { password: editForm.value.password } : {}),
+    }
+    await apiClient.patch(`/admin/users/${editingUserId.value}`, payload)
+    toast.success('User updated successfully.')
+    editingUserId.value = null
+    fetchUsers()
+  } catch (err) {
+    toast.error('Failed to update user.')
+  }
+}
+
 async function handleToggleStatus(user: UserOut) {
   try {
     const newStatus = !user.is_active
@@ -66,7 +96,11 @@ async function handleToggleStatus(user: UserOut) {
 }
 
 async function handleDeleteUser(id: number) {
-  if (!confirm('Are you sure you want to permanently delete this user?')) return
+  const confirmed = await confirmStore.ask(
+    'This user will be unable to sign in and cannot be restored.',
+    'Permanently delete user?',
+  )
+  if (!confirmed) return
   try {
     await apiClient.delete(`/admin/users/${id}`)
     toast.success('User permanently deleted.')
@@ -124,21 +158,51 @@ onMounted(() => {
             </td>
             <td class="p-4 text-right space-x-3">
               <button 
+                @click="handleDeleteUser(u.id)"
+                class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950/70"
+              >
+                Delete
+              </button>
+              <button 
                 @click="handleToggleStatus(u)"
-                class="font-semibold text-xs text-amber-600 dark:text-amber-400 hover:underline"
+                :class="u.is_active
+                  ? 'text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/40'
+                  : 'text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40'"
+                class="rounded-lg px-3 py-2 text-xs font-semibold transition"
               >
                 {{ u.is_active ? 'Deactivate' : 'Activate' }}
               </button>
-              <button 
-                @click="handleDeleteUser(u.id)"
-                class="font-semibold text-xs text-rose-600 dark:text-rose-400 hover:underline"
+              <button
+                @click="openEditUser(u)"
+                class="rounded-lg px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-950/40"
               >
-                Delete
+                Edit
               </button>
             </td>
           </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- Edit User Modal -->
+    <div v-if="editingUserId !== null" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 backdrop-blur-sm p-4">
+      <div class="bg-white dark:bg-slate-900 rounded-2xl max-w-md w-full p-6 border border-slate-200 dark:border-slate-800 shadow-xl space-y-4">
+        <h3 class="text-lg font-bold text-slate-950 dark:text-slate-100">Edit User</h3>
+        <form @submit.prevent="handleEditUser" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">Username</label>
+            <input v-model="editForm.username" type="text" required class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-950 dark:text-slate-100" />
+          </div>
+          <div>
+            <label class="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1">New Password</label>
+            <input v-model="editForm.password" type="password" placeholder="Leave blank to keep current password" class="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-950 dark:text-slate-100" />
+          </div>
+          <div class="flex justify-end space-x-2 pt-4">
+            <button type="button" @click="editingUserId = null" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-sm font-medium text-slate-700 dark:text-slate-300">Cancel</button>
+            <button type="submit" class="px-4 py-2 bg-slate-950 dark:bg-slate-100 dark:text-slate-950 text-white text-sm font-bold rounded-xl">Save Changes</button>
+          </div>
+        </form>
+      </div>
     </div>
 
     <!-- Register User Modal -->
