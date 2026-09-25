@@ -49,7 +49,7 @@ def list_profiles(
     include_inactive: bool = False,
     session: Session = Depends(DatabaseManager.get_session),
 ):
-    stmt = select(AluminiumProfile)
+    stmt = select(AluminiumProfile).where(AluminiumProfile.is_deleted == False)  # noqa: E712
     if not include_inactive:
         stmt = stmt.where(AluminiumProfile.is_active == True)  # noqa: E712
     return session.exec(stmt).all()
@@ -60,7 +60,7 @@ def list_types(
     include_inactive: bool = False,
     session: Session = Depends(DatabaseManager.get_session),
 ):
-    stmt = select(WindowDoorType)
+    stmt = select(WindowDoorType).where(WindowDoorType.is_deleted == False)  # noqa: E712
     if not include_inactive:
         stmt = stmt.where(WindowDoorType.is_active == True)  # noqa: E712
     return session.exec(stmt).all()

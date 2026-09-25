@@ -124,11 +124,11 @@ def price_preview(
 ):
     """Stateless calculation -- nothing is saved."""
     profile = session.get(AluminiumProfile, payload.aluminium_profile_id)
-    if not profile or not profile.is_active:
+    if not profile or not profile.is_active or profile.is_deleted:
         raise HTTPException(404, "Aluminium profile not found or inactive.")
 
     window_door_type = session.get(WindowDoorType, payload.window_door_type_id)
-    if not window_door_type or not window_door_type.is_active:
+    if not window_door_type or not window_door_type.is_active or window_door_type.is_deleted:
         raise HTTPException(404, "Window/door type not found or inactive.")
 
     try:
@@ -212,11 +212,11 @@ def create_quotation(
 
     for item_data in payload.items:
         profile = session.get(AluminiumProfile, item_data.aluminium_profile_id)
-        if not profile or not profile.is_active:
+        if not profile or not profile.is_active or profile.is_deleted:
             raise HTTPException(404, f"Profile ID {item_data.aluminium_profile_id} not found or inactive.")
 
         window_door_type = session.get(WindowDoorType, item_data.window_door_type_id)
-        if not window_door_type or not window_door_type.is_active:
+        if not window_door_type or not window_door_type.is_active or window_door_type.is_deleted:
             raise HTTPException(404, f"Window/Door Type ID {item_data.window_door_type_id} not found or inactive.")
 
         try:
