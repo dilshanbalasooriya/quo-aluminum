@@ -2,11 +2,13 @@
 import { ref, onMounted } from 'vue'
 import apiClient from '@/api/axios'
 import { useToastStore } from '@/stores/toastStore'
+import { useConfirmStore } from '@/stores/confirmStore'
 import { useCatalogStore } from '@/stores/catalogStore'
 import type { ProfileOut, ProfileCreate,ProfileUpdate } from '@/types'
 
 const catalog = useCatalogStore()
 const toast = useToastStore()
+const confirmStore = useConfirmStore()
 
 const profiles = ref<ProfileOut[]>([])
 const loading = ref(false)
@@ -91,7 +93,11 @@ async function handleToggleStatus(p: ProfileUpdate) {
 
 // Permanently delete item so it disappears completely
 async function handleDelete(id: number) {
-  if (!confirm('Are you sure you want to permanently delete this profile?')) return
+  const confirmed = await confirmStore.ask(
+    'This profile will be hidden from both admins and workers and cannot be restored.',
+    'Permanently delete profile?',
+  )
+  if (!confirmed) return
   try {
     await apiClient.delete(`/admin/aluminium-profiles/${id}`)
     toast.success('Profile permanently removed.')
@@ -150,22 +156,25 @@ onMounted(() => {
             </td>
             <td class="p-4 text-right space-x-3">
               <button 
-                @click="openEditModal(p)"
-                class="font-semibold text-xs text-sky-600 dark:text-sky-400 hover:underline"
+                @click="handleDelete(p.id)"
+                class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950/70"
               >
-                Edit
+                Delete
               </button>
               <button 
                 @click="handleToggleStatus(p)"
-                class="font-semibold text-xs text-amber-600 dark:text-amber-400 hover:underline"
+                :class="p.is_active
+                  ? 'text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/40'
+                  : 'text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40'"
+                class="rounded-lg px-3 py-2 text-xs font-semibold transition"
               >
                 {{ p.is_active ? 'Deactivate' : 'Activate' }}
               </button>
               <button 
-                @click="handleDelete(p.id)"
-                class="font-semibold text-xs text-rose-600 dark:text-rose-400 hover:underline"
+                @click="openEditModal(p)"
+                class="rounded-lg px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-950/40"
               >
-                Delete
+                Edit
               </button>
             </td>
           </tr>

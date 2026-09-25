@@ -2,11 +2,13 @@
 import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { useCatalogStore } from '@/stores/catalogStore'
 import { useToastStore } from '@/stores/toastStore'
+import { useConfirmStore } from '@/stores/confirmStore'
 import apiClient from '@/api/axios'
 import WindowSvgPreview from '@/components/WindowSvgPreview.vue'
 
 const catalog = useCatalogStore()
 const toast = useToastStore()
+const confirmStore = useConfirmStore()
 
 // ---------- helpers ----------
 // Change this one constant to switch the whole page (e.g. to 'Rs. ').
@@ -205,8 +207,13 @@ function clearDraft() {
   customerPhone.value = ''
 }
 
-function handleDiscard() {
-  if (!confirm('Are you sure you want to discard this quotation draft?')) return
+async function handleDiscard() {
+  const confirmed = await confirmStore.ask(
+    'All items and customer details in this draft will be cleared.',
+    'Discard quotation draft?',
+    'Discard draft',
+  )
+  if (!confirmed) return
   clearDraft()
   workerFee.value = DEFAULT_WORKER_FEE
   toast.success('Draft discarded.')
