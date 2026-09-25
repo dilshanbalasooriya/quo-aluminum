@@ -7,6 +7,7 @@ from routers.admin import router as admin_router
 from routers.auth import router as auth_router
 from routers.catalog import router as catalog_router
 from routers.quotation import router as quotation_router
+from configs.config import origin
 
 app = FastAPI()
 
@@ -15,12 +16,7 @@ def on_startup():
     DatabaseManager.create_db_and_tables()
 
 
-origins = [
-    "http://localhost",
-    "http://127.0.0.1",
-    "http://127.0.0.1:5000",
-    "http://localhost:5000",
-]
+origins = origin
 
 app.add_middleware(
     CORSMiddleware,

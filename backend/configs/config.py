@@ -18,3 +18,10 @@ COMPANY_ADDRESS= os.getenv('COMPANY_ADDRESS')
 COMPANY_PHONE=os.getenv("COMPANY_PHONE")
 COMPANY_WEBSITE= os.getenv('COMPANY_WEBSITE')
 COMPANY_LOGO_URL=os.getenv('COMPANY_LOGO_URL')
+
+
+origin = [
+	item.strip()
+	for item in os.getenv("ORIGIN", "").split(",")
+	if item.strip()
+]
