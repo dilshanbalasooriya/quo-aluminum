@@ -34,8 +34,11 @@ class User(SQLModel, table=True):
     
     id: Optional[int] = Field(default=None, primary_key=True)
     username: str = Field(index=True, unique=True, max_length=50)
+    email: Optional[str] = Field(default=None, max_length=255)
     password_hash: str = Field(max_length=255)
     role: RoleEnum
+    is_active: bool = Field(default=True)
+    is_deleted: bool = Field(default=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
     # Relationships
@@ -52,6 +55,7 @@ class AluminiumProfile(SQLModel, table=True):
     weight_per_meter: Decimal = Field(default=0, max_digits=10, decimal_places=3)
     rate_per_kg: Decimal = Field(default=0, max_digits=10, decimal_places=2)
     is_active: bool = Field(default=True)
+    is_deleted: bool = Field(default=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
@@ -64,6 +68,7 @@ class WindowDoorType(SQLModel, table=True):
     vertical_bars_count: int = Field(default=2)
     horizontal_bars_count: int = Field(default=2)
     is_active: bool = Field(default=True)
+    is_deleted: bool = Field(default=False)
     created_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
 
 
