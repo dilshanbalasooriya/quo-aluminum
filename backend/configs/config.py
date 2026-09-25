@@ -10,7 +10,7 @@ load_dotenv(dotenv_path=env_path)
 
 
 SECRET_KEY= os.getenv('SECRET_KEY')
-DB_URI=os.getenv('POSTGRES_DB_URI')
+DB_URI=os.getenv('DB_URI')
 
 
 COMPANY_NAME= os.getenv('COMPANY_NAME')
