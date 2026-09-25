@@ -8,7 +8,9 @@ export type StatusEnum = 'DRAFT' | 'ISSUED'
 export interface UserResponse {
   id: number
   username: string
+  email?: string | null
   role: RoleEnum
+  is_active: boolean
 }
 
 export interface UserRegister {

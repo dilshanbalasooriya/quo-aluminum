@@ -2,12 +2,14 @@
 import { ref, onMounted } from 'vue'
 import apiClient from '@/api/axios'
 import { useToastStore } from '@/stores/toastStore'
+import { useConfirmStore } from '@/stores/confirmStore'
 import { useCatalogStore } from '@/stores/catalogStore'
 import type { TypeOut, TypeCreate } from '@/types'
 import WindowSvgPreview from '@/components/WindowSvgPreview.vue'
 
 const catalog = useCatalogStore()
 const toast = useToastStore()
+const confirmStore = useConfirmStore()
 
 const types = ref<TypeOut[]>([])
 const showModal = ref(false)
@@ -83,6 +85,22 @@ async function handleToggleStatus(t: TypeOut) {
   }
 }
 
+async function handleDelete(id: number) {
+  const confirmed = await confirmStore.ask(
+    'This template will be hidden from both admins and workers and cannot be restored.',
+    'Permanently delete template?',
+  )
+  if (!confirmed) return
+  try {
+    await apiClient.delete(`/admin/window-door-types/${id}`)
+    toast.success('Template deleted successfully.')
+    catalog.invalidateCache()
+    fetchTypes()
+  } catch (err) {
+    toast.error('Failed to delete template.')
+  }
+}
+
 onMounted(() => {
   fetchTypes()
 })
@@ -132,17 +150,24 @@ onMounted(() => {
         </div>
 
         <!-- Card Actions -->
-        <div class="flex items-center justify-end space-x-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
-          <button @click="openEditModal(t)" class="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:underline">
-            Edit
+        <div class="flex items-center justify-between space-x-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
+          <button @click="handleDelete(t.id)" class="rounded-lg bg-rose-50 px-3 py-2 text-xs font-semibold text-rose-700 transition hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:hover:bg-rose-950/70">
+            Delete
           </button>
-          <button 
-            @click="handleToggleStatus(t)" 
-            :class="t.is_active ? 'text-amber-600 dark:text-amber-400' : 'text-emerald-600 dark:text-emerald-400'"
-            class="text-xs font-semibold hover:underline"
-          >
-            {{ t.is_active ? 'Deactivate' : 'Activate' }}
-          </button>
+          <div class="flex items-center space-x-3">
+            <button
+              @click="handleToggleStatus(t)"
+              :class="t.is_active
+                ? 'text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/40'
+                : 'text-emerald-700 hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-950/40'"
+              class="rounded-lg px-3 py-2 text-xs font-semibold transition"
+            >
+              {{ t.is_active ? 'Deactivate' : 'Activate' }}
+            </button>
+            <button @click="openEditModal(t)" class="rounded-lg px-3 py-2 text-xs font-semibold text-sky-700 transition hover:bg-sky-50 dark:text-sky-300 dark:hover:bg-sky-950/40">
+              Edit
+            </button>
+          </div>
         </div>
       </div>
     </div>
