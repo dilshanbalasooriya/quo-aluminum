@@ -60,7 +60,13 @@ def get_current_user(
     except jwt.PyJWTError:
         raise credentials_exception
 
-    user = session.exec(select(User).where(User.username == username)).first()
+    user = session.exec(
+        select(User).where(
+            User.username == username,
+            User.is_active == True,  # noqa: E712
+            User.is_deleted == False,  # noqa: E712
+        )
+    ).first()
     if user is None:
         raise credentials_exception
     return user

@@ -7,7 +7,7 @@ from sqlmodel import Session, func, select
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from services.security import require_admin
+from services.security import hash_password, require_admin
 from database.connection import DatabaseManager
 from database.models import (
     AluminiumProfile,
@@ -46,6 +46,13 @@ class AdminDashboardStatus(BaseModel):
     quotation_status: list[QuotationStatusItem] = []
 
 
+class UserUpdate(BaseModel):
+    username: Optional[str] = None
+    email: Optional[str] = None
+    password: Optional[str] = None
+    is_active: Optional[bool] = None
+
+
 @router.get("/status", response_model=AdminDashboardStatus)
 @router.get("/stats", response_model=AdminDashboardStatus)
 def get_dashboard_status(session: Session = Depends(DatabaseManager.get_session)):
@@ -68,9 +75,14 @@ def get_dashboard_status(session: Session = Depends(DatabaseManager.get_session)
         )
     ).one() or 0
 
-    total_users = session.exec(select(func.count(User.id))).one() or 0
+    total_users = session.exec(
+        select(func.count(User.id)).where(User.is_deleted == False)  # noqa: E712
+    ).one() or 0
     active_profiles = session.exec(
-        select(func.count(AluminiumProfile.id)).where(AluminiumProfile.is_active.is_(True))
+        select(func.count(AluminiumProfile.id)).where(
+            AluminiumProfile.is_active.is_(True),
+            AluminiumProfile.is_deleted == False,  # noqa: E712
+        )
     ).one() or 0
 
     revenue_trend = []
@@ -107,6 +119,48 @@ def get_dashboard_status(session: Session = Depends(DatabaseManager.get_session)
         "revenue_trend": revenue_trend,
         "quotation_status": quotation_status,
     }
+
+
+@router.patch("/users/{user_id}")
+def update_user(
+    user_id: int,
+    payload: UserUpdate,
+    session: Session = Depends(DatabaseManager.get_session),
+):
+    user = session.get(User, user_id)
+    if not user or user.is_deleted:
+        raise HTTPException(404, "User not found.")
+    if payload.username is not None:
+        existing_user = session.exec(
+            select(User).where(User.username == payload.username, User.id != user_id)
+        ).first()
+        if existing_user:
+            raise HTTPException(400, "Username already registered.")
+        user.username = payload.username
+    if payload.email is not None:
+        user.email = payload.email
+    if payload.password is not None:
+        user.password_hash = hash_password(payload.password)
+    if payload.is_active is not None:
+        user.is_active = payload.is_active
+    session.add(user)
+    session.commit()
+    return {"ok": True}
+
+
+@router.delete("/users/{user_id}")
+def delete_user(user_id: int, session: Session = Depends(DatabaseManager.get_session)):
+    user = session.get(User, user_id)
+    if not user or user.is_deleted:
+        raise HTTPException(404, "User not found.")
+    user.is_active = False
+    user.is_deleted = True
+    suffix = f"__deleted_{user.id}"
+    prefix_length = max(1, 50 - len(suffix))
+    user.username = f"{user.username[:prefix_length]}{suffix}"
+    session.add(user)
+    session.commit()
+    return {"ok": True}
 
 
 class ProfileCreate(BaseModel):
@@ -152,7 +206,7 @@ def update_profile(
     session: Session = Depends(DatabaseManager.get_session),
 ):
     profile = session.get(AluminiumProfile, profile_id)
-    if not profile:
+    if not profile or profile.is_deleted:
         raise HTTPException(404, "Aluminium profile not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(profile, k, v)
@@ -163,12 +217,13 @@ def update_profile(
  
  
 @router.delete("/aluminium-profiles/{profile_id}")
-def deactivate_profile(profile_id: int, session: Session = Depends(DatabaseManager.get_session)):
-    """Soft delete -- keeps past quotations that reference this profile intact."""
+def delete_profile(profile_id: int, session: Session = Depends(DatabaseManager.get_session)):
+    """Hide the profile permanently from both admin and worker listings."""
     profile = session.get(AluminiumProfile, profile_id)
-    if not profile:
+    if not profile or profile.is_deleted:
         raise HTTPException(404, "Aluminium profile not found.")
     profile.is_active = False
+    profile.is_deleted = True
     session.add(profile)
     session.commit()
     return {"ok": True}
@@ -222,7 +277,7 @@ def update_type(
     session: Session = Depends(DatabaseManager.get_session),
 ):
     obj = session.get(WindowDoorType, type_id)
-    if not obj:
+    if not obj or obj.is_deleted:
         raise HTTPException(404, "Window/door type not found.")
     for k, v in payload.model_dump(exclude_unset=True).items():
         setattr(obj, k, v)
@@ -233,11 +288,12 @@ def update_type(
  
  
 @router.delete("/window-door-types/{type_id}")
-def deactivate_type(type_id: int, session: Session = Depends(DatabaseManager.get_session)):
+def delete_type(type_id: int, session: Session = Depends(DatabaseManager.get_session)):
     obj = session.get(WindowDoorType, type_id)
-    if not obj:
+    if not obj or obj.is_deleted:
         raise HTTPException(404, "Window/door type not found.")
     obj.is_active = False
+    obj.is_deleted = True
     session.add(obj)
     session.commit()
     return {"ok": True}

@@ -1,3 +1,5 @@
+from typing import Optional
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from pydantic import BaseModel
@@ -20,12 +22,15 @@ router = APIRouter(prefix="/auth", tags=["Authentication"])
 class UserRegister(BaseModel):
     username: str
     password: str
+    email: Optional[str] = None
 
 
 class UserResponse(BaseModel):
     id: int
     username: str
+    email: Optional[str] = None
     role: RoleEnum
+    is_active: bool
 
 
 class Token(BaseModel):
@@ -47,7 +52,10 @@ def register_worker(
     """Registers a new user with the WORKER role."""
 
     existing_user = session.exec(
-        select(User).where(User.username == user_data.username)
+        select(User).where(
+            User.username == user_data.username,
+            User.is_deleted == False,  # noqa: E712
+        )
     ).first()
     if existing_user:
         raise HTTPException(
@@ -57,6 +65,7 @@ def register_worker(
 
     new_worker = User(
         username=user_data.username,
+        email=user_data.email,
         password_hash=hash_password(user_data.password),
         role=RoleEnum.WORKER,
     )
@@ -74,12 +83,12 @@ def register_worker(
 )
 def list_users(session: Session = Depends(DatabaseManager.get_session)):
     """Admin-only: list all logins."""
-    return session.exec(select(User)).all()
+    return session.exec(select(User).where(User.is_deleted == False)).all()  # noqa: E712
 
 
 
 #Password recovery
-router.put(
+@router.put(
     "/users/{user_id}/password",
     dependencies=[Depends(require_admin)],
 )
@@ -91,7 +100,7 @@ def reset_password(
     """Admin-only: set a new password for any user (e.g. a worker who
     forgot theirs). The admin does not need to know the old password."""
     user = session.get(User, user_id)
-    if not user:
+    if not user or user.is_deleted:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "User not found.")
     user.password_hash = hash_password(payload.new_password)
     session.add(user)
@@ -105,7 +114,11 @@ def login(
 ):
     """Authenticates user (Admin or Worker) and returns a JWT access token."""
     user = session.exec(
-        select(User).where(User.username == form_data.username)
+        select(User).where(
+            User.username == form_data.username,
+            User.is_active == True,  # noqa: E712
+            User.is_deleted == False,  # noqa: E712
+        )
     ).first()
 
     if not user or not verify_password(form_data.password, user.password_hash):
