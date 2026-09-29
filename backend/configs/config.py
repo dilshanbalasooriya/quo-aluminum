@@ -10,7 +10,7 @@ load_dotenv(dotenv_path=env_path)
 
 
 SECRET_KEY= os.getenv('SECRET_KEY')
-DB_URI=os.getenv('DB_URI')
+DATABASE_URL=os.getenv('DATABASE_URL')
 
 
 COMPANY_NAME= os.getenv('COMPANY_NAME')

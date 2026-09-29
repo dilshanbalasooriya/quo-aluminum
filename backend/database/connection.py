@@ -1,10 +1,10 @@
 import os
 from sqlmodel import SQLModel, Session, create_engine
 
-from configs.config import DB_URI 
+from configs.config import DATABASE_URL 
 
 # Defaulting to SQLite for local development; override with your production DB URL
-DATABASE_URL = DB_URI
+DATABASE_URL = DATABASE_URL
 
 # check_same_thread is needed only for SQLite
 connect_args = {"check_same_thread": False} if "sqlite" in DATABASE_URL else {}
