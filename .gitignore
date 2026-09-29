@@ -1,6 +1,7 @@
 .api-venv/
 .env
 .*-venv
+*.env
 
 
 __pycache__/
@@ -10,3 +11,5 @@ __pycache__/
 #
 .vscode/
 backend/aluminium_quotation.db
+.gitignore
+backend/pass.py
