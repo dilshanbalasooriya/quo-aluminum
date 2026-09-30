@@ -38,6 +38,7 @@ from jinja2 import Environment, FileSystemLoader
 
 
 router = APIRouter(prefix="/quotations", tags=["Quotations"], dependencies=[Depends(get_current_user)])
+public_router = APIRouter(prefix="/public/quotations", tags=["Public Estimation"])
 templates_dir = Path(__file__).parent.parent / "templates"
 jinja_env = Environment(loader=FileSystemLoader(str(templates_dir)))
 
@@ -117,8 +118,7 @@ def _generate_quotation_number(session: Session) -> str:
     return f"{prefix}{next_seq:04d}"
 # --- Routes ---
 
-@router.post("/price-preview", response_model=PricePreviewResponse)
-def price_preview(
+def _calculate_price_preview(
     payload: PricePreviewRequest,
     session: Session = Depends(DatabaseManager.get_session),
 ):
@@ -149,6 +149,22 @@ def price_preview(
         price_per_unit=float(breakdown.price_per_unit),
         item_total=float(breakdown.item_total),
     )
+
+
+@router.post("/price-preview", response_model=PricePreviewResponse)
+def price_preview(
+    payload: PricePreviewRequest,
+    session: Session = Depends(DatabaseManager.get_session),
+):
+    return _calculate_price_preview(payload, session)
+
+
+@public_router.post("/price-preview", response_model=PricePreviewResponse)
+def public_price_preview(
+    payload: PricePreviewRequest,
+    session: Session = Depends(DatabaseManager.get_session),
+):
+    return _calculate_price_preview(payload, session)
 
 
 @router.get("")

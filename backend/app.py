@@ -5,8 +5,8 @@ from database.connection import DatabaseManager
 
 from routers.admin import router as admin_router
 from routers.auth import router as auth_router
-from routers.catalog import router as catalog_router
-from routers.quotation import router as quotation_router
+from routers.catalog import router as catalog_router, public_router as public_catalog_router
+from routers.quotation import router as quotation_router, public_router as public_quotation_router
 from configs.config import origin
 
 app = FastAPI()
@@ -30,6 +30,8 @@ app.include_router(admin_router)
 app.include_router(auth_router)
 app.include_router(catalog_router)
 app.include_router(quotation_router)
+app.include_router(public_catalog_router)
+app.include_router(public_quotation_router)
 
 
 @app.get("/")

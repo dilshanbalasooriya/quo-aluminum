@@ -13,3 +13,4 @@ __pycache__/
 backend/aluminium_quotation.db
 .gitignore
 backend/pass.py
+yay.txt

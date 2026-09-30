@@ -10,6 +10,17 @@ const router = createRouter({
       component: () => import('@/views/LoginView.vue'),
       meta: { requiresAuth: false }
     },
+    {
+      path: '/',
+      name: 'public-estimator',
+      component: () => import('@/views/PublicEstimationView.vue'),
+      meta: { requiresAuth: false },
+      beforeEnter: () => {
+        const authStore = useAuthStore()
+        if (!authStore.isAuthenticated) return true
+        return authStore.isAdmin ? { name: 'admin-dashboard' } : { name: 'worker-dashboard' }
+      }
+    },
     // ================= ADMIN ROUTES =================
     {
       path: '/admin',
@@ -54,30 +65,22 @@ const router = createRouter({
         },
       ],
     },
-    // ================= DEFAULT REDIRECT =================
-    {
-      path: '/',
-      redirect: () => {
-        const authStore = useAuthStore()
-        return authStore.isAdmin ? { name: 'admin-dashboard' } : { name: 'worker-dashboard' }
-      }
-    }
   ]
 })
 
 // Navigation Guards
-router.beforeEach((to, _from, next) => {
+router.beforeEach((to) => {
   const authStore = useAuthStore()
 
   if (to.meta.requiresAuth && !authStore.isAuthenticated) {
-    return next({ name: 'login' })
+    return { name: 'login' }
   }
 
   if (to.meta.role && authStore.user?.role !== to.meta.role && authStore.user?.role !== 'ADMIN') {
-    return next({ name: 'login' })
+    return { name: 'login' }
   }
 
-  next()
+  return true
 })
 
 export default router

@@ -16,6 +16,7 @@ from database.models import AluminiumProfile, WindowDoorType, CategoryEnum, Sett
 from services.security import get_current_user
 
 router = APIRouter(prefix="/catalog", tags=["Catalog"], dependencies=[Depends(get_current_user)])
+public_router = APIRouter(prefix="/public/catalog", tags=["Public Estimation"])
 
 
 class ProfileOut(BaseModel):
@@ -70,3 +71,21 @@ def list_types(
 def read_setting(key: str, session: Session = Depends(DatabaseManager.get_session)):
     row = session.get(Setting, key)
     return SettingOut(key=key, value=row.value if row else "0")
+
+
+@public_router.get("/aluminium-profiles", response_model=list[ProfileOut])
+def list_public_profiles(session: Session = Depends(DatabaseManager.get_session)):
+    stmt = select(AluminiumProfile).where(
+        AluminiumProfile.is_deleted == False,  # noqa: E712
+        AluminiumProfile.is_active == True,  # noqa: E712
+    )
+    return session.exec(stmt).all()
+
+
+@public_router.get("/window-door-types", response_model=list[TypeOut])
+def list_public_types(session: Session = Depends(DatabaseManager.get_session)):
+    stmt = select(WindowDoorType).where(
+        WindowDoorType.is_deleted == False,  # noqa: E712
+        WindowDoorType.is_active == True,  # noqa: E712
+    )
+    return session.exec(stmt).all()

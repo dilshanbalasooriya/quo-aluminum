@@ -61,7 +61,7 @@ const showLayoutShell = computed(() => {
     </div>
 
     <!-- 2. CLEAN CANVAS (Renders for LoginView without header/sidebar) -->
-    <div v-else class="min-h-screen flex items-center justify-center">
+    <div v-else class="min-h-screen">
       <RouterView />
     </div>
 
